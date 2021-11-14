@@ -167,7 +167,7 @@ app.get('/uploads/:id', authMiddleware, async (req, res) => {
     credential: { stringSession },
   } = req.auth;
   const { id } = req.params;
-  console.log({ id });
+  const { download } = req.query;
 
   const telegramStringSession = new StringSession(stringSession);
   const client = new TelegramClient(telegramStringSession, API_ID, API_HASH, {
@@ -187,6 +187,9 @@ app.get('/uploads/:id', authMiddleware, async (req, res) => {
 
   const mimeType = result.messages[0].media.document.mimeType;
   res.type(mimeType);
+  if (download === '1') {
+    res.set('Content-Disposition', `attachment; filename="unknown"`);
+  }
   return res.send(resultFile);
 });
 
