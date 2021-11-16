@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+  </head>
+  <body>
+    <h1>Login</h1>
+    <label for="phone">Phone Number</label>
+    <input
+      required
+      type="tel"
+      name="phone"
+      id="phone"
+      placeholder="+62 1234 1234 1234"
+    />
+    <button id="send-code">send code</button>
+    <br />
+    <label for="code">Code</label>
+    <input required type="text" name="code" id="code" placeholder="xxxxxx" />
+    <button id="login">login</button>
+  </body>
+
+  <script>
+    const sendCodeButton = document.getElementById('send-code');
+    const loginButton = document.getElementById('login');
+
+    let phoneCodeHash = null;
+    let phoneCode = null;
+    let phoneNumber = null;
+
+    sendCodeButton.addEventListener('click', async () => {
+      phoneNumber = document.getElementById('phone').value;
+      const response = await fetch('/auth/sendcode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber }),
+      });
+
+      const responseJson = await response.json();
+      console.log(responseJson);
+      phoneCodeHash = responseJson.phoneCodeHash;
+    });
+
+    loginButton.addEventListener('click', async () => {
+      phoneCode = document.getElementById('code').value;
+      const response = await fetch('/auth/signin', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phoneNumber, phoneCodeHash, phoneCode }),
+      });
+
+      const responseJson = await response.json();
+      console.log(responseJson);
+    });
+  </script>
+</html>

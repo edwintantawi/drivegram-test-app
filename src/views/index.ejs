@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+  </head>
+  <body>
+    <h1>Dashboard</h1>
+    <form>
+      <input type="file" name="files" id="files" />
+      <button id="upload">upload</button>
+    </form>
+
+    <hr />
+
+    <h2>Drive</h2>
+    <ul id="list"></ul>
+
+    <script>
+      const fetchDrive = async () => {
+        const list = document.getElementById('list');
+        const response = await fetch('/uploads');
+        const responseJson = await response.json();
+        let templateList = [];
+        responseJson.forEach((file) => {
+          templateList.push(`
+          <li>
+            <a href="${file.url}" target="__blank">[${file.mimeType} ] ${file.title}</a>
+          </li>
+          `);
+        });
+
+        list.innerHTML = templateList.join('');
+      };
+
+      fetchDrive();
+    </script>
+
+    <script>
+      const button = document.getElementById('upload');
+      const onUpload = async (e) => {
+        button.disabled = true;
+        button.innerText = 'please wait Uploading...';
+        e.preventDefault();
+        const files = document.getElementById('files');
+        const formData = new FormData();
+        formData.append('file', files.files[0]);
+        console.log(formData);
+
+        const response = await fetch('/uploads', {
+          body: formData,
+          method: 'POST',
+        });
+
+        const responseJson = await response.json();
+        button.disabled = false;
+        button.innerText = 'upload';
+        fetchDrive();
+        console.log(responseJson);
+      };
+      button.addEventListener('click', onUpload);
+    </script>
+  </body>
+</html>
