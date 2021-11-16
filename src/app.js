@@ -40,22 +40,24 @@ client.connect();
 
 app.post('/auth/sendcode', async (req, res) => {
   const { phoneNumber } = req.body;
-
+  try {
+    const result = await client.invoke(
+      new Api.auth.SendCode({
+        phoneNumber,
+        apiId: API_ID,
+        apiHash: API_HASH,
+        settings: new Api.CodeSettings({
+          allowFlashcall: true,
+          currentNumber: true,
+          allowAppHash: true,
+        }),
+      })
+    );
+    return res.json({ phoneNumber, phoneCodeHash: result.phoneCodeHash });
+  } catch (error) {
+    return res.json({ error });
+  }
   // await client.connect();
-  const result = await client.invoke(
-    new Api.auth.SendCode({
-      phoneNumber,
-      apiId: API_ID,
-      apiHash: API_HASH,
-      settings: new Api.CodeSettings({
-        allowFlashcall: true,
-        currentNumber: true,
-        allowAppHash: true,
-      }),
-    })
-  );
-
-  return res.json({ phoneNumber, phoneCodeHash: result.phoneCodeHash });
 });
 
 app.post('/auth/signin', async (req, res) => {
@@ -65,21 +67,24 @@ app.post('/auth/signin', async (req, res) => {
   // const client = new TelegramClient(stringSession, API_ID, API_HASH, {
   //   connectionRetries: 5,
   // });
+  try {
+    // await client.connect();
+    await client.invoke(
+      new Api.auth.SignIn({
+        phoneNumber,
+        phoneCodeHash,
+        phoneCode,
+      })
+    );
 
-  // await client.connect();
-  await client.invoke(
-    new Api.auth.SignIn({
-      phoneNumber,
-      phoneCodeHash,
-      phoneCode,
-    })
-  );
-
-  const savedStringSession = client.session.save();
-  const credential = jwt.sign({ stringSession: savedStringSession }, JWT_KEY);
-  res.cookie('credential', credential);
-  console.log(credential);
-  return res.json({ credential });
+    const savedStringSession = client.session.save();
+    const credential = jwt.sign({ stringSession: savedStringSession }, JWT_KEY);
+    res.cookie('credential', credential);
+    console.log(credential);
+    return res.json({ credential });
+  } catch (error) {
+    return res.json({ error });
+  }
 });
 
 app.post('/messages', authMiddleware, async (req, res) => {
@@ -139,46 +144,50 @@ app.post('/uploads', upload.any(), authMiddleware, async (req, res) => {
     credential: { stringSession },
   } = req.auth;
 
-  const telegramStringSession = new StringSession(stringSession);
-  const client = new TelegramClient(telegramStringSession, API_ID, API_HASH, {
-    connectionRetries: 5,
-  });
-  await client.connect();
+  try {
+    const telegramStringSession = new StringSession(stringSession);
+    const client = new TelegramClient(telegramStringSession, API_ID, API_HASH, {
+      connectionRetries: 5,
+    });
+    await client.connect();
 
-  const file = req.files[0];
+    const file = req.files[0];
 
-  const result = await client.invoke(
-    new Api.messages.SendMedia({
-      peer: 'me',
-      message: '',
-      randomId: BigInt(+new Date()),
-      media: new Api.InputMediaUploadedDocument({
-        file: await client.uploadFile({
-          file: new CustomFile(file.originalname, file.size, '', file.buffer),
-          workers: 15,
-          onProgress: console.log,
-        }),
-        mimeType: file.mimetype,
-        attributes: [
-          new Api.DocumentAttributeFilename({
-            fileName: file.originalname,
+    const result = await client.invoke(
+      new Api.messages.SendMedia({
+        peer: 'me',
+        message: '',
+        randomId: BigInt(+new Date()),
+        media: new Api.InputMediaUploadedDocument({
+          file: await client.uploadFile({
+            file: new CustomFile(file.originalname, file.size, '', file.buffer),
+            workers: 15,
+            onProgress: console.log,
           }),
-        ],
-      }),
-    })
-  );
+          mimeType: file.mimetype,
+          attributes: [
+            new Api.DocumentAttributeFilename({
+              fileName: file.originalname,
+            }),
+          ],
+        }),
+      })
+    );
 
-  memoryDB.push({
-    id: result.updates[0].id,
-    title: file.originalname,
-    mimeType: file.mimetype,
-    url: `/uploads/${result.updates[0].id}`,
-  });
-  return res.json({
-    id: result.updates[0].id,
-    title: file.originalname,
-    mimeType: file.mimetype,
-  });
+    memoryDB.push({
+      id: result.updates[0].id,
+      title: file.originalname,
+      mimeType: file.mimetype,
+      url: `/uploads/${result.updates[0].id}`,
+    });
+    return res.json({
+      id: result.updates[0].id,
+      title: file.originalname,
+      mimeType: file.mimetype,
+    });
+  } catch (error) {
+    return res.json({ error });
+  }
 });
 
 app.get('/uploads', authMiddleware, async (req, res) => {
@@ -186,13 +195,17 @@ app.get('/uploads', authMiddleware, async (req, res) => {
     credential: { stringSession },
   } = req.auth;
 
-  const telegramStringSession = new StringSession(stringSession);
-  const client = new TelegramClient(telegramStringSession, API_ID, API_HASH, {
-    connectionRetries: 5,
-  });
-  await client.connect();
+  try {
+    const telegramStringSession = new StringSession(stringSession);
+    const client = new TelegramClient(telegramStringSession, API_ID, API_HASH, {
+      connectionRetries: 5,
+    });
+    await client.connect();
 
-  return res.json(memoryDB);
+    return res.json(memoryDB);
+  } catch (error) {
+    return res.json({ error });
+  }
 });
 
 app.get('/uploads/:id', authMiddleware, async (req, res) => {
@@ -202,28 +215,32 @@ app.get('/uploads/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { download } = req.query;
 
-  const telegramStringSession = new StringSession(stringSession);
-  const client = new TelegramClient(telegramStringSession, API_ID, API_HASH, {
-    connectionRetries: 5,
-  });
-  await client.connect();
+  try {
+    const telegramStringSession = new StringSession(stringSession);
+    const client = new TelegramClient(telegramStringSession, API_ID, API_HASH, {
+      connectionRetries: 5,
+    });
+    await client.connect();
 
-  const result = await client.invoke(
-    new Api.messages.GetMessages({
-      id: [parseInt(id)],
-    })
-  );
+    const result = await client.invoke(
+      new Api.messages.GetMessages({
+        id: [parseInt(id)],
+      })
+    );
 
-  const resultFile = await client.downloadMedia(result.messages[0], {
-    progressCallback: console.log,
-  });
+    const resultFile = await client.downloadMedia(result.messages[0], {
+      progressCallback: console.log,
+    });
 
-  const mimeType = result.messages[0].media.document.mimeType;
-  res.type(mimeType);
-  if (download === '1') {
-    res.set('Content-Disposition', `attachment; filename="unknown"`);
+    const mimeType = result.messages[0].media.document.mimeType;
+    res.type(mimeType);
+    if (download === '1') {
+      res.set('Content-Disposition', `attachment; filename="unknown"`);
+    }
+    return res.send(resultFile);
+  } catch (error) {
+    return res.json({ error });
   }
-  return res.send(resultFile);
 });
 
 app.get('/', authMiddleware, (req, res) => {
