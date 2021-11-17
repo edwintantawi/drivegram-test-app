@@ -36,7 +36,7 @@ const memoryDB = [];
 
 const createClient = async (session = '') => {
   const stringSession = new StringSession(session);
-  const options = { connectionRetries: 5 };
+  const options = { connectionRetries: 5, timeout: 60000 };
   const client = new TelegramClient(stringSession, API_ID, API_HASH, options);
   await client.connect();
   return client;
@@ -237,7 +237,7 @@ app.get('/files', authMiddleware, async (req, res) => {
   const { id } = req.credentials;
 
   try {
-    const result = memoryDB.filter((file) => file.uid === id);
+    const result = memoryDB.filter((file) => file.uid == id);
     return res.json(result);
   } catch (error) {
     return res.json({ error });
@@ -250,6 +250,8 @@ app.get('/files/:fileid', authMiddleware, async (req, res) => {
   const { download } = req.query;
 
   const client = await createClient(stringSession);
+
+  const file = memoryDB.find((file) => file.id == fileid);
   try {
     const getMessages = new Api.messages.GetMessages({
       id: [parseInt(fileid)],
@@ -266,7 +268,8 @@ app.get('/files/:fileid', authMiddleware, async (req, res) => {
     const mimeType = result.messages[0].media.document.mimeType;
     res.type(mimeType);
     if (download === '1') {
-      res.set('Content-Disposition', `attachment; filename="unknown"`);
+      console.log(file);
+      res.set('Content-Disposition', `attachment; filename="${file.title}"`);
     }
     return res.send(resultFile);
   } catch (error) {
