@@ -3,17 +3,15 @@ const jwt = require('jsonwebtoken');
 const JWT_KEY = process.env.JWT_KEY;
 
 const authMiddleware = (req, res, next) => {
-  // const { credential } = req.cookies;
-  const credential = req.cookies.credential || req.body.credential;
-  // const { credential } = req.body;
-  if (!credential) {
+  const credentials = req.cookies.credentials || req.body.credentials;
+  if (!credentials) {
     // return res.json({ error: 'string session not found' });
-    res.redirect('/app/login');
+    return res.redirect('/app/login');
   }
 
-  const decodedCredential = jwt.verify(credential, JWT_KEY);
+  const decodedCredential = jwt.verify(credentials, JWT_KEY);
 
-  req.auth = { credential: decodedCredential };
+  req.credentials = decodedCredential;
   next();
 };
 

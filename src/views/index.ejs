@@ -8,6 +8,7 @@
   </head>
   <body>
     <h1>Dashboard</h1>
+    <h3>ID : <%= id %></h3>
     <form>
       <input type="file" name="files" id="files" />
       <button id="upload">upload</button>
@@ -21,13 +22,20 @@
     <script>
       const fetchDrive = async () => {
         const list = document.getElementById('list');
-        const response = await fetch('/uploads');
+        const response = await fetch('/files');
         const responseJson = await response.json();
         let templateList = [];
         responseJson.forEach((file) => {
           templateList.push(`
           <li>
-            <a href="${file.url}" target="__blank">[${file.mimeType} ] ${file.title}</a>
+            <span>
+              [ ${file.mimeType} ] <b>${file.title}</b>
+            </span> 
+            (
+              <a href="${file.url}" target="__blank">view</a>
+              <span> | </span>
+              <a href="${file.download_url}" target="__blank">download</a>
+            )
           </li>
           `);
         });
@@ -49,7 +57,7 @@
         formData.append('file', files.files[0]);
         console.log(formData);
 
-        const response = await fetch('/uploads', {
+        const response = await fetch('/files', {
           body: formData,
           method: 'POST',
         });
