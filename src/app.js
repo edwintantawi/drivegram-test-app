@@ -12,7 +12,7 @@ const { signInMiddleware } = require('./middleware/signInMiddleware');
 
 // express
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // telegram
 const API_ID = Number(process.env.API_ID);
