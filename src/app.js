@@ -36,7 +36,7 @@ const memoryDB = [];
 
 const createClient = async (session = '') => {
   const stringSession = new StringSession(session);
-  const options = { connectionRetries: 5, timeout: 60000 };
+  const options = { connectionRetries: 5, useWSS: false };
   const client = new TelegramClient(stringSession, API_ID, API_HASH, options);
   await client.connect();
   return client;
